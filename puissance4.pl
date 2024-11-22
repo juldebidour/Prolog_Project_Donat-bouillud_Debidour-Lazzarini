@@ -38,14 +38,30 @@ demander_chiffre(Plateau,J1,J2,JA) :-
     (   integer(Input),                                
         Input >= 1,
         Input =< 7
-    ->  coup(Plateau,J1, J2, JA, Input)                                 
+    ->  verifierTaille(Plateau,J1, J2, JA, Input)                                 
     ;   write('Entrée invalide. '), nl,
         demander_chiffre(Plateau,J1,J2,JA)                    
     ) .
 choisirPion(J1,J2,JA, Pion) :- dif(J1,JA), Pion = "X" ; dif(J2,JA), Pion = "O" .
 changerJoueur(J1,J2,JA,JS) :- dif(J1,JA), JS = J1; dif(J2,JA), JS = J2 .
 
-coup(Plateau,J1, J2, JA, Chiffre) :- choisirPion(J1,J2,JA, Pion), changerJoueur(J1,J2,JA,JS), etatJeu(Plateau, J1,J2,JS).
+% Coup : gestion d'un tour
+coup(Plateau, J1, J2, JA, Chiffre) :- choisirPion(J1, J2, JA, Pion), changerJoueur(J1, J2, JA, JS), ajouterPion(Plateau, Chiffre, Pion, NouveauPlateau), etatJeu(NouveauPlateau, J1, J2, JS).      
+
+verifierTaille(Plateau,J1,J2,JA, NumColonne) :- recupererColonne(Plateau, NumColonne, ColonneVoulue), length(ColonneVoulue, Taille), Taille >= 6, write('Cette colonne est pleine.'), demander_chiffre(Plateau,J1,J2,JA); 
+recupererColonne(Plateau, NumColonne, ColonneVoulue), length(ColonneVoulue, Taille), Taille < 6,coup(Plateau,J1, J2, JA, NumColonne).
+
+recupererColonne([Colonne|Reste], Indice, ColonneVoulue) :- IndiceSuivant is Indice-1 , recupererColonne(Reste, IndiceSuivant, ColonneVoulue).
+recupererColonne([Colonne|Reste], 1,ColonneVoulue) :- ColonneVoulue = Colonne.
+
+
+% Ajoute un pion dans une colonne donnée (reconstruit le plateau)
+ajouterPion([Colonne|Reste], 1, Pion, [NouvelleColonne|Reste]) :- ajouterColonnePionFin(Colonne, Pion, NouvelleColonne). % Choisi la bonne colonne pour ajouter le pion
+ajouterPion([Colonne|Reste], Chiffre, Pion, [Colonne|NouveauReste]) :- Chiffre > 1, ChiffreSuivant is Chiffre - 1, ajouterPion(Reste, ChiffreSuivant, Pion, NouveauReste). 
+
+% Ajoute un élément à la fin d'une colonne
+ajouterColonnePionFin([], Pion, [Pion]). 
+ajouterColonnePionFin([T|Q], Pion, [T|R]) :- ajouterColonnePionFin(Q, Pion, R).
 
 %append(nth1(Chiffre, Plateau, 1), [1], Plateaufutur), 
 %write("Le joueur"), write(JA), write("a mis son point dans la colonne"), write(Chiffre),
