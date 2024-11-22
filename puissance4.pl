@@ -11,20 +11,19 @@ affichagePlateau(NbLignes, Plateau) :-
 affichagePlateau(0, _) :- nl .  
 
 % Fonction récursive pour afficher chaque colonne d'une ligne donnée
+afficher(Colonne, Indice) :-
+    nth1(Indice, Colonne, Element), write(" "), % Récupère l'élément à l'indice donné
+    write(Element), write(" "), ! .  % Affiche l'élément s'il existe
+afficher(_, _) :- write(' . ').
 
 afficherColonnes([], Indice) :- !.
 afficherColonnes([Colonne|Reste], Indice) :-
-    afficher(Colonne, Indice),  % Affiche l'élément de la colonne à l'indice donné
-    write(" "),  % Ajoute un espace entre les colonnes
-    afficherColonnes(Reste, Indice).  % Appel récursif pour les colonnes restantes
+    afficher(Colonne, Indice),  
+    write(" "),  
+    afficherColonnes(Reste, Indice). 
 
-afficher_liste([]) :-!. 
+afficher_liste([]) :- ! .
 
-% Fonction pour afficher un élément spécifique d'une colonne
-afficher(Colonne, Indice) :-
-    nth1(Indice, Colonne, Element), write(" "), % Récupère l'élément à l'indice donné
-    write(Element), write(" "), !.  % Affiche l'élément s'il existe
-afficher(_, _) :- write(' . ').
 
 initialisationJeu(J1, J2) :- write("Bienvenue, joueur 1 : "), write(J1), write(" et joueur 2 : "),write(J2),nl, 
  PlateauVide= [[],[],[],[],[],[],[]], etatJeu(PlateauVide,J1,J2,J1).
