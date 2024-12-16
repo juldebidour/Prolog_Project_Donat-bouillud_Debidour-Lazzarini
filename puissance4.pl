@@ -62,9 +62,7 @@ ajouterPion([Colonne|Reste], Chiffre, Pion, [Colonne|NouveauReste]) :- Chiffre >
 ajouterColonnePionFin([], Pion, [Pion]). 
 ajouterColonnePionFin([T|Q], Pion, [T|R]) :- ajouterColonnePionFin(Q, Pion, R).
 
-%append(nth1(Chiffre, Plateau, 1), [1], Plateaufutur), 
-%write("Le joueur"), write(JA), write("a mis son point dans la colonne"), write(Chiffre),
-%etatJeu(Plateaufutur, J1,J2,J2).
+
 
 a(X) :-  write(X).
 %finJeu(Plateau, ).
