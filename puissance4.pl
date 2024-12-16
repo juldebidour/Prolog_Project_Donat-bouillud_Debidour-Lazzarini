@@ -24,10 +24,11 @@ afficherColonnes([Colonne|Reste], Indice) :-
 
 afficher_liste([]) :- ! .
 
-
+%% INITIALISATION DU JEU
 initialisationJeu(J1, J2) :- write("Bienvenue, joueur 1 : "), write(J1), write(" et joueur 2 : "),write(J2),nl, 
  PlateauVide= [[],[],[],[],[],[],[]], etatJeu(PlateauVide,J1,J2,J1).
 
+%% TOUR DE JEU D'UN JOUEUR
 etatJeu(Plateau, J1, J2, JA) :- nl, write('C''est à '), write(JA) , write(" de jouer. Voici le plateau de jeu : "),nl, affichagePlateau(6,Plateau), demander_chiffre(Plateau, J1,J2, JA). % affichagePlateau
 
 demander_chiffre(Plateau,J1,J2,JA) :-
@@ -44,12 +45,14 @@ demander_chiffre(Plateau,J1,J2,JA) :-
 choisirPion(J1,J2,JA, Pion) :- dif(J1,JA), Pion = "X" ; dif(J2,JA), Pion = "O" .
 changerJoueur(J1,J2,JA,JS) :- dif(J1,JA), JS = J1; dif(J2,JA), JS = J2 .
 
-% Coup : gestion d'un tour
-coup(Plateau, J1, J2, JA, Chiffre) :- choisirPion(J1, J2, JA, Pion), changerJoueur(J1, J2, JA, JS), ajouterPion(Plateau, Chiffre, Pion, NouveauPlateau), etatJeu(NouveauPlateau, J1, J2, JS).      
+%% GESTION D'UN COUP DE JEU
+coup(Plateau, J1, J2, JA, Chiffre) :- choisirPion(J1, J2, JA, Pion), changerJoueur(J1, J2, JA, JS), ajouterPion(Plateau, Chiffre, Pion, NouveauPlateau), verificationfinduJeu(NouveauPlateau, Chiffre, J1, J2, JA, JS).   
 
+% Vérifie qu'on peut ajouter un pion
 verifierTaille(Plateau,J1,J2,JA, NumColonne) :- recupererColonne(Plateau, NumColonne, ColonneVoulue), length(ColonneVoulue, Taille), Taille >= 6, write('Cette colonne est pleine.'), demander_chiffre(Plateau,J1,J2,JA); 
-recupererColonne(Plateau, NumColonne, ColonneVoulue), length(ColonneVoulue, Taille), Taille < 6,coup(Plateau,J1, J2, JA, NumColonne).
 
+% Ajoute un pion si on le peut en récupérant la colonne voulue
+recupererColonne(Plateau, NumColonne, ColonneVoulue), length(ColonneVoulue, Taille), Taille < 6,coup(Plateau,J1, J2, JA, NumColonne).
 recupererColonne([Colonne|Reste], Indice, ColonneVoulue) :- IndiceSuivant is Indice-1 , recupererColonne(Reste, IndiceSuivant, ColonneVoulue).
 recupererColonne([Colonne|Reste], 1,ColonneVoulue) :- ColonneVoulue = Colonne.
 
@@ -66,3 +69,50 @@ ajouterColonnePionFin([T|Q], Pion, [T|R]) :- ajouterColonnePionFin(Q, Pion, R).
 
 a(X) :-  write(X).
 %finJeu(Plateau, ).
+
+%%VERIFICATION
+% VERIFICATION 1 : vérification si le plateau de jeu est pleins.
+verificationfinduJeu(Plateau, Chiffre, J1, J2, JA, JS) :-
+    ( grilleremplie(Plateau) ->
+        write("La grille est pleine. Match nul !"), nl, fail
+    ; verificationColonne(Plateau, Chiffre, J1, J2, JA, JS) % On vérifie maintenant toutes les colonnes
+    ).
+
+grilleremplie([]) :- true. % Toutes les colonnes sont pleines
+grilleremplie([Colonne|Reste]) :- length(Colonne, Taille), ( Taille >= 6 -> grilleremplie(Reste) ; fail).
+
+% VERIFICATION 2: vérifie si il y a 4 pions alignés dans la colonne ou le dernier joueur a mis son pion
+verificationColonne(Plateau, Chiffre, J1, J2, JA, JS) :-
+    recupererColonne(Plateau, Chiffre, ColonneVoulue),
+    ( aColonne(ColonneVoulue) ->
+        write(JA), write(" a gagné !"), nl, affichagePlateau(6,Plateau), 
+        fail ; verificationLigne(Plateau, Chiffre, J1, J2, JA, JS)
+    ).
+% Vérifie si une colonne contient une suite de 4 termes identiques
+aColonne(Colonne) :- length(Colonne, Taille), Taille >= 4, contientSuiteDeQuatre(Colonne).
+
+% Vérifie si une suite de 4 termes identiques existe dans la liste
+contientSuiteDeQuatre([X, X, X, X | _]) :- X \= ".", X \= '.' . 
+contientSuiteDeQuatre([_ | Reste]) :- contientSuiteDeQuatre(Reste).
+
+%VERIFICATION 3 : vérifie si il y a 4 pions alignés sur la ligne ou le dernier joueur a mis son pion
+verificationLigne(Plateau, Chiffre, J1, J2, JA, JS) :- recupererColonne(Plateau, Chiffre, ColonneVoulue), length(ColonneVoulue, Ligne),
+    ( aLigne(Plateau, Ligne) ->
+        write(JA), write(" a gagné !"), nl, affichagePlateau(6,Plateau), 
+        fail ; etatJeu(Plateau, J1, J2, JS)
+    ).
+
+% Vérifie si une ligne contient une suite de 4 symboles identiques en construidant la ligne ou le dernier joueur a mis son pio et en regardant si il y a une suite
+aLigne(Plateau, Ligne) :- construireLigne(Plateau, Ligne, LigneConstruite), contientSuiteDeQuatre(LigneConstruite).
+
+% Construit une ligne en rassemblant les éléments correspondants à l'index Ligne dans chaque colonne
+construireLigne([], _, []). % Cas de base : on a parcouru toutes les colonnes du plateau, la ligne est entièrement construite
+construireLigne([Colonne|ResteColonnes], Ligne, [Element|ResteLigne]) :- ( nth1(Ligne, Colonne, Element) -> true ; Element = '.'), construireLigne(ResteColonnes, Ligne, ResteLigne).
+
+
+%VERIFICATION 4 : vérifie si il y a 4 pions alignés sur une diagonale où le dernier joueur a mis son pion
+
+
+
+
+    
