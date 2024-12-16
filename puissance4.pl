@@ -67,9 +67,6 @@ ajouterColonnePionFin([T|Q], Pion, [T|R]) :- ajouterColonnePionFin(Q, Pion, R).
 
 
 
-a(X) :-  write(X).
-%finJeu(Plateau, ).
-
 %%VERIFICATION
 % VERIFICATION 1 : vérification si le plateau de jeu est pleins.
 verificationfinduJeu(Plateau, Chiffre, J1, J2, JA, JS) :-
@@ -99,7 +96,7 @@ contientSuiteDeQuatre([_ | Reste]) :- contientSuiteDeQuatre(Reste).
 verificationLigne(Plateau, Chiffre, J1, J2, JA, JS) :- recupererColonne(Plateau, Chiffre, ColonneVoulue), length(ColonneVoulue, Ligne),
     ( aLigne(Plateau, Ligne) ->
         write(JA), write(" a gagné !"), nl, affichagePlateau(6,Plateau), 
-        fail ; etatJeu(Plateau, J1, J2, JS)
+        fail ; verificationDiagonale(Plateau, Chiffre, J1, J2, JA, JS)
     ).
 
 % Vérifie si une ligne contient une suite de 4 symboles identiques en construidant la ligne ou le dernier joueur a mis son pio et en regardant si il y a une suite
@@ -111,8 +108,38 @@ construireLigne([Colonne|ResteColonnes], Ligne, [Element|ResteLigne]) :- ( nth1(
 
 
 %VERIFICATION 4 : vérifie si il y a 4 pions alignés sur une diagonale où le dernier joueur a mis son pion
+verificationDiagonale(Plateau, Chiffre, J1, J2, JA, JS) :- recupererColonne(Plateau, Chiffre, ColonneVoulue), length(ColonneVoulue, Ligne),
+    ( aDiagonale(Plateau, Ligne, Chiffre) ->
+        write(JA), write(" a gagné !"), nl, affichagePlateau(6,Plateau), 
+        fail ; etatJeu(Plateau, J1, J2, JS)
+    ).
+aDiagonale(Plateau, Ligne, Colonne) :- aDiagonale1(Plateau, Ligne, Colonne).
+
+%%On regarde si il existe une diagonale : haut-gauche - bas-droite de 4 éléments ou plus. Si oui, on va la construire et regarder si elle contient 4 éléments identiques à la suite.
+aDiagonale1(Plateau, Ligne, Colonne) :- TotalLigneColonne is Ligne + Colonne,
+    ( TotalLigneColonne >= 5, TotalLigneColonne =< 11 ->
+    construireDiagonale1(Plateau, TotalLigneColonne, Diagonale1Construite), write(Diagonale1Construite),contientSuiteDeQuatre(Diagonale1Construite)
+    ; false).
+
+%On construit la diagonale
+construireDiagonale1(Plateau, TotalLigneColonne, Diagonale1Construite) :- debutDiagonale(TotalLigneColonne, LigneDebut, ColonneDebut), recupererdiagonale1(Plateau,LigneDebut, ColonneDebut, Diagonale1Construite).
+
+%On regarde quelle est la ligne et la colonne de début de cette diagonale en partant du coté gauche du plateau de jeu
+debutDiagonale(TotalLigneColonne, LigneDebut, ColonneDebut) :- ( TotalLigneColonne > 7 ->
+    LigneDebut is 6, ColonneDebut is TotalLigneColonne - 6
+    ; LigneDebut is TotalLigneColonne - 1 , ColonneDebut is 1 ).
 
 
+% Récupère les éléments d'une diagonale dans la direction "bas-gauche à haut-droite"
+recupererdiagonale1(_, Ligne, Colonne, []) :-  Ligne < 1 ; Colonne > 7. % Condition d'arrêt : ligne < 1 ou colonne > 7
 
+recupererdiagonale1(Plateau, Ligne, Colonne, [Element|Reste]) :-
+    recupererElement(Plateau, Ligne, Colonne, Element), % Récupère l'élément à la position (Ligne, Colonne)
+    LigneSuivante is Ligne - 1, % Passe à la ligne précédente
+    ColonneSuivante is Colonne + 1, % Passe à la colonne suivante
+    recupererdiagonale1(Plateau, LigneSuivante, ColonneSuivante, Reste).
 
-    
+% Récupère l'élément (ligne, colonne) dans le plateau
+recupererElement(Plateau, Ligne, Colonne, Element) :-
+    nth1(Colonne, Plateau, CurrentCol), % Récupère la colonne spécifiée
+    (nth1(Ligne, CurrentCol, Element) -> true ; Element = '.'). % Si l'élément existe, récupère-le, sinon insère '.'
