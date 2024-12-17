@@ -11,9 +11,7 @@ affichagePlateau(NbLignes, Plateau) :-
 affichagePlateau(0, _) :- nl .  
 
 % Fonction récursive pour afficher chaque colonne d'une ligne donnée
-afficher(Colonne, Indice) :-
-    nth1(Indice, Colonne, Element), write(" "), % Récupère l'élément à l'indice donné
-    write(Element), write(" "), ! .  % Affiche l'élément s'il existe
+afficher(Colonne, Indice) :- nth1(Indice, Colonne, Element), write(" "), write(Element), write(" "), ! .  % Affiche l'élément s'il existe
 afficher(_, _) :- write(' . ').
 
 afficherColonnes([], Indice) :- !.
@@ -113,12 +111,12 @@ verificationDiagonale(Plateau, Chiffre, J1, J2, JA, JS) :- recupererColonne(Plat
         write(JA), write(" a gagné !"), nl, affichagePlateau(6,Plateau), 
         fail ; etatJeu(Plateau, J1, J2, JS)
     ).
-aDiagonale(Plateau, Ligne, Colonne) :- aDiagonale1(Plateau, Ligne, Colonne).
+aDiagonale(Plateau, Ligne, Colonne) :- aDiagonale1(Plateau, Ligne, Colonne) ; aDiagonale2(Plateau,Ligne,Colonne).
 
 %%On regarde si il existe une diagonale : haut-gauche - bas-droite de 4 éléments ou plus. Si oui, on va la construire et regarder si elle contient 4 éléments identiques à la suite.
 aDiagonale1(Plateau, Ligne, Colonne) :- TotalLigneColonne is Ligne + Colonne,
     ( TotalLigneColonne >= 5, TotalLigneColonne =< 11 ->
-    construireDiagonale1(Plateau, TotalLigneColonne, Diagonale1Construite), write(Diagonale1Construite),contientSuiteDeQuatre(Diagonale1Construite)
+    construireDiagonale1(Plateau, TotalLigneColonne, Diagonale1Construite),contientSuiteDeQuatre(Diagonale1Construite)
     ; false).
 
 %On construit la diagonale
@@ -141,5 +139,32 @@ recupererdiagonale1(Plateau, Ligne, Colonne, [Element|Reste]) :-
 
 % Récupère l'élément (ligne, colonne) dans le plateau
 recupererElement(Plateau, Ligne, Colonne, Element) :-
-    nth1(Colonne, Plateau, CurrentCol), % Récupère la colonne spécifiée
+    nth1(Colonne, Plateau, CurrentCol), 
     (nth1(Ligne, CurrentCol, Element) -> true ; Element = '.'). % Si l'élément existe, récupère-le, sinon insère '.'
+
+%Faire la diagonale 2
+%%On regarde si il existe une diagonale : bas-gauche - haut-droite de 4 éléments ou plus. Si oui, on va la construire et regarder si elle contient 4 éléments identiques à la suite.
+aDiagonale2(Plateau, Ligne, Colonne) :- ColonneMoinsLigne is Colonne-Ligne,
+    ( ColonneMoinsLigne >= -2, ColonneMoinsLigne =< 3 ->
+    construireDiagonale2(Plateau, ColonneMoinsLigne, Diagonale2Construite), contientSuiteDeQuatre(Diagonale2Construite)
+    ; false).
+
+%On construit la diagonale
+construireDiagonale2(Plateau, ColonneMoinsLigne, Diagonale2Construite) :- debutDiagonale2(ColonneMoinsLigne, LigneDebut, ColonneDebut), recupererdiagonale2(Plateau,LigneDebut, ColonneDebut, Diagonale2Construite).
+
+%On regarde quelle est la ligne et la colonne de début de cette diagonale en partant du coté gauche du plateau de jeu
+debutDiagonale2(ColonneMoinsLigne, LigneDebut, ColonneDebut) :- ( ColonneMoinsLigne >= 1 ->
+    LigneDebut is 7 - ColonneMoinsLigne, ColonneDebut is 7
+    ; LigneDebut is 6 , ColonneDebut is 6+ ColonneMoinsLigne), !.
+
+
+% Récupère les éléments d'une diagonale dans la direction "bas-gauche à haut-droite"
+recupererdiagonale2(_, Ligne, Colonne, []) :-  Ligne < 1 ; Colonne > 7. % Condition d'arrêt : ligne < 1 ou colonne > 7
+
+recupererdiagonale2(Plateau, Ligne, Colonne, [Element|Reste]) :-
+    recupererElement(Plateau, Ligne, Colonne, Element), % Récupère l'élément à la position (Ligne, Colonne)
+    LigneSuivante is Ligne - 1, % Passe à la ligne précédente
+    ColonneSuivante is Colonne - 1, % Passe à la colonne suivante
+    recupererdiagonale2(Plateau, LigneSuivante, ColonneSuivante, Reste).
+
+
