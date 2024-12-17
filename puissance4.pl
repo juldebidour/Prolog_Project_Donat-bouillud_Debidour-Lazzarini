@@ -21,10 +21,30 @@ afficherColonnes([Colonne|Reste], Indice) :-
     afficherColonnes(Reste, Indice). 
 
 afficher_liste([]) :- ! .
+%%DEBUT DU JEU
+%Demander le mode de jeu
+demanderModeJeu :- write('Bienvenue dans ce jeu du puissance 4 !'), nl, write('Si vous voulez jouer avec un humain, tapez 1. Si vous voulez jouer contre la machine, tapez 2 : '),  
+    read(Input),                                       
+    (   integer(Input),                                
+        Input >= 1,
+        Input =< 2
+    ->  choixJeu(Input)                                 
+    ;   write('Entrée invalide. '), nl,
+        demanderModeJeu                   
+    ).
+%Si le jeu est contre une autre personne, on demande les noms et on lance le jeu en multi. Sinon on demande le nom de l'unique joueur et on lance le jeu contre notre algo.
+choixJeu(Numero) :- Numero is 1, nomJoueurs(Joueur1, Joueur2),initialisationJeu(Joueur1, Joueur2) ; Numero is 2 , write('Veuillez entrer votre nom : '), read(Joueur),nl, initialisationJeuSeul(Joueur).
+
+%Demander le nom des joueurs
+nomJoueurs(Joueur1, Joueur2) :- write('Veuillez entrer le nom du joueur 1 : '), read(Joueur1), write('Veuillez entrer le nom du joueur 2 : '), 
+    read(Joueur2),nl,format('Bienvenue ~w et ~w, le jeu peut commencer !', [Joueur1, Joueur2]),nl.
 
 %% INITIALISATION DU JEU
-initialisationJeu(J1, J2) :- write("Bienvenue, joueur 1 : "), write(J1), write(" et joueur 2 : "),write(J2),nl, 
- PlateauVide= [[],[],[],[],[],[],[]], etatJeu(PlateauVide,J1,J2,J1).
+%Jeu en multi
+initialisationJeu(J1, J2) :- PlateauVide= [[],[],[],[],[],[],[]], etatJeu(PlateauVide,J1,J2,J1).
+
+%Jeu contre la machine
+initialisationJeuSeul(Joueur) :- PlateauVide= [[],[],[],[],[],[],[]], write(Joueur).
 
 %% TOUR DE JEU D'UN JOUEUR
 etatJeu(Plateau, J1, J2, JA) :- nl, write('C''est à '), write(JA) , write(" de jouer. Voici le plateau de jeu : "),nl, affichagePlateau(6,Plateau), demander_chiffre(Plateau, J1,J2, JA). % affichagePlateau
