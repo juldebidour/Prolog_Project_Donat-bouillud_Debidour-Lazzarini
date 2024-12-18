@@ -1,26 +1,23 @@
 
 %% AFFICHAGE
 % Affichage global du plateau
-affichagePlateau(NbLignes, Plateau) :-
-    NbLignes > 0,  % Vérifie qu'il reste des lignes à afficher
-    write("| "),
-    afficherColonnes(Plateau, NbLignes),  % Affiche les éléments à la ligne actuelle
-    write(" |"), nl,  % Saut de ligne
-    NbLignesSuivantes is NbLignes - 1,  % Passe à la ligne suivante
-    affichagePlateau(NbLignesSuivantes, Plateau).  % Appel récursif
-affichagePlateau(0, _) :- nl .  
+% Affiche le plateau avec les numéros de colonnes
+affichagePlateau(_, Plateau) :-
+    write("  1   2   3   4   5   6   7 "), nl,
+    write("-----------------------------"), nl,
+    affichageLignes(6, Plateau).
 
-% Fonction récursive pour afficher chaque colonne d'une ligne donnée
-afficher(Colonne, Indice) :- nth1(Indice, Colonne, Element), write(" "), write(Element), write(" "), ! .  % Affiche l'élément s'il existe
-afficher(_, _) :- write(' . ').
+% Affiche les lignes du plateau
+affichageLignes(0, _) :- nl.
+affichageLignes(N, Plateau) :-N > 0,afficherLigne(N, Plateau),nl,
+    write("-----------------------------"), nl,
+    N1 is N - 1, affichageLignes(N1, Plateau).
 
-afficherColonnes([], Indice) :- !.
-afficherColonnes([Colonne|Reste], Indice) :-
-    afficher(Colonne, Indice),  
-    write(" "),  
-    afficherColonnes(Reste, Indice). 
-
-afficher_liste([]) :- ! .
+% Affiche une ligne donnée
+afficherLigne(N, []) :- write("|").
+afficherLigne(N, [Colonne|Reste]) :-
+    (nth1(N, Colonne, Element) -> write("| "), write(Element), write(" ") ; write("| . ")),
+    afficherLigne(N, Reste).
 %%DEBUT DU JEU
 %Demander le mode de jeu
 demanderModeJeu :- write('Bienvenue dans ce jeu du puissance 4 !'), nl, write('Si vous voulez jouer avec un humain, tapez 1. Si vous voulez jouer contre la machine, tapez 2 : '),  
@@ -44,10 +41,18 @@ nomJoueurs(Joueur1, Joueur2) :- write('Veuillez entrer le nom du joueur 1 : '), 
 initialisationJeu(J1, J2) :- PlateauVide= [[],[],[],[],[],[],[]], etatJeu(PlateauVide,J1,J2,J1).
 
 %Jeu contre la machine
-initialisationJeuSeul(Joueur) :- PlateauVide= [[],[],[],[],[],[],[]], write(Joueur).
+initialisationJeuSeul(Joueur) :- PlateauVide= [[],[],[],[],[],[],[]], etatJeu(PlateauVide,Joueur,'Robot',Joueur).
 
 %% TOUR DE JEU D'UN JOUEUR
-etatJeu(Plateau, J1, J2, JA) :- nl, write('C''est à '), write(JA) , write(" de jouer. Voici le plateau de jeu : "),nl, affichagePlateau(6,Plateau), demander_chiffre(Plateau, J1,J2, JA). % affichagePlateau
+%On affiche l'état du jeu
+etatJeu(Plateau, J1, J2, JA) :- nl, write('C''est à '), write(JA) , write(" de jouer. Voici le plateau de jeu : "),nl, affichagePlateau(6,Plateau), tourDeJeu(Plateau, J1,J2, JA).
+
+%On regarde si c'est à un joueur ou au robot de jouer. Si c'est au joueur, on lui demande un chiffre, sinon le robot joue son coup.
+tourDeJeu(Plateau,J1,J2,JA) :- dif(JA,'Robot'),demander_chiffre(Plateau,J1,J2,JA); coupRobot(Plateau,J1,J2,JA).
+
+coupRobot(Plateau,J1,J2,JA):- robotChoixCoup(Plateau, J1, J2, JA, CoupRobot),verifierTaille(Plateau,J1, J2, JA, CoupRobot).
+robotChoixCoup(Plateau, J1, J2, JA, CoupRobot):-CoupRobot is 1.
+
 
 demander_chiffre(Plateau,J1,J2,JA) :-
     nl,
@@ -60,6 +65,7 @@ demander_chiffre(Plateau,J1,J2,JA) :-
     ;   write('Entrée invalide. '), nl,
         demander_chiffre(Plateau,J1,J2,JA)                    
     ) .
+
 choisirPion(J1,J2,JA, Pion) :- dif(J1,JA), Pion = "X" ; dif(J2,JA), Pion = "O" .
 changerJoueur(J1,J2,JA,JS) :- dif(J1,JA), JS = J1; dif(J2,JA), JS = J2 .
 
@@ -89,7 +95,7 @@ ajouterColonnePionFin([T|Q], Pion, [T|R]) :- ajouterColonnePionFin(Q, Pion, R).
 % VERIFICATION 1 : vérification si le plateau de jeu est pleins.
 verificationfinduJeu(Plateau, Chiffre, J1, J2, JA, JS) :-
     ( grilleremplie(Plateau) ->
-        write("La grille est pleine. Match nul !"), nl, fail
+        write("La grille est pleine. Match nul !"), nl, finDuJeu
     ; verificationColonne(Plateau, Chiffre, J1, J2, JA, JS) % On vérifie maintenant toutes les colonnes
     ).
 
@@ -100,8 +106,8 @@ grilleremplie([Colonne|Reste]) :- length(Colonne, Taille), ( Taille >= 6 -> gril
 verificationColonne(Plateau, Chiffre, J1, J2, JA, JS) :-
     recupererColonne(Plateau, Chiffre, ColonneVoulue),
     ( aColonne(ColonneVoulue) ->
-        write(JA), write(" a gagné !"), nl, affichagePlateau(6,Plateau), 
-        fail ; verificationLigne(Plateau, Chiffre, J1, J2, JA, JS)
+        write(JA), write(" a gagné !"), nl, affichagePlateau(6,Plateau), finDuJeu 
+        ; verificationLigne(Plateau, Chiffre, J1, J2, JA, JS)
     ).
 % Vérifie si une colonne contient une suite de 4 termes identiques
 aColonne(Colonne) :- length(Colonne, Taille), Taille >= 4, contientSuiteDeQuatre(Colonne).
@@ -113,8 +119,8 @@ contientSuiteDeQuatre([_ | Reste]) :- contientSuiteDeQuatre(Reste).
 %VERIFICATION 3 : vérifie si il y a 4 pions alignés sur la ligne ou le dernier joueur a mis son pion
 verificationLigne(Plateau, Chiffre, J1, J2, JA, JS) :- recupererColonne(Plateau, Chiffre, ColonneVoulue), length(ColonneVoulue, Ligne),
     ( aLigne(Plateau, Ligne) ->
-        write(JA), write(" a gagné !"), nl, affichagePlateau(6,Plateau), 
-        fail ; verificationDiagonale(Plateau, Chiffre, J1, J2, JA, JS)
+        write(JA), write(" a gagné !"), nl, affichagePlateau(6,Plateau), finDuJeu ; 
+    verificationDiagonale(Plateau, Chiffre, J1, J2, JA, JS)
     ).
 
 % Vérifie si une ligne contient une suite de 4 symboles identiques en construidant la ligne ou le dernier joueur a mis son pio et en regardant si il y a une suite
@@ -128,8 +134,8 @@ construireLigne([Colonne|ResteColonnes], Ligne, [Element|ResteLigne]) :- ( nth1(
 %VERIFICATION 4 : vérifie si il y a 4 pions alignés sur une diagonale où le dernier joueur a mis son pion
 verificationDiagonale(Plateau, Chiffre, J1, J2, JA, JS) :- recupererColonne(Plateau, Chiffre, ColonneVoulue), length(ColonneVoulue, Ligne),
     ( aDiagonale(Plateau, Ligne, Chiffre) ->
-        write(JA), write(" a gagné !"), nl, affichagePlateau(6,Plateau), 
-        fail ; etatJeu(Plateau, J1, J2, JS)
+        write(JA), write(" a gagné !"), nl, affichagePlateau(6,Plateau), finDuJeu ; 
+    etatJeu(Plateau, J1, J2, JS)
     ).
 aDiagonale(Plateau, Ligne, Colonne) :- aDiagonale1(Plateau, Ligne, Colonne) ; aDiagonale2(Plateau,Ligne,Colonne).
 
@@ -187,4 +193,5 @@ recupererdiagonale2(Plateau, Ligne, Colonne, [Element|Reste]) :-
     ColonneSuivante is Colonne - 1, % Passe à la colonne suivante
     recupererdiagonale2(Plateau, LigneSuivante, ColonneSuivante, Reste).
 
-
+%Fin du jeu
+finDuJeu :- write('Le jeu est terminé ! Merci d''avoir joué.'), nl,halt.
