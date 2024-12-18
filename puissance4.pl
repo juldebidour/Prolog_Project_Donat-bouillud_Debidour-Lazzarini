@@ -11,12 +11,13 @@ affichageLignes(N, Plateau) :-N > 0,afficherLigne(N, Plateau),nl,write("--------
 % Affiche une ligne donnée
 afficherLigne(N, []) :- write("|").
 afficherLigne(N, [Colonne|Reste]) :- (nth1(N, Colonne, Element) -> write("| "), write(Element), write(" ") ; write("| . ")),afficherLigne(N, Reste).
+
 %%DEBUT DU JEU
 %Demander le mode de jeu
-demanderModeJeu :- write('Bienvenue dans ce jeu du puissance 4 !'), nl, write('Si vous voulez jouer avec un humain, tapez 1. Si vous voulez jouer contre la machine, tapez 2 : '),  
+jeu :- write('Bienvenue dans ce jeu du puissance 4 !'), nl, write('Si vous voulez jouer avec un humain, tapez 1. Si vous voulez jouer contre la machine, tapez 2 : '),  
     read(Input),                                       
     (   integer(Input),Input >= 1,Input =< 2 ->  choixJeu(Input);
-        write('Entrée invalide. '), nl,demanderModeJeu                   
+        write('Entrée invalide. '), nl,jeu                   
     ).
 %Si le jeu est contre une autre personne, on demande les noms et on lance le jeu en multi. Sinon on demande le nom de l'unique joueur et on lance le jeu contre notre algo.
 choixJeu(Numero) :- Numero is 1, nomJoueurs(Joueur1, Joueur2),initialisationJeu(Joueur1, Joueur2) ; Numero is 2 , write('Veuillez entrer votre nom : '), read(Joueur),nl, initialisationJeuSeul(Joueur).
@@ -44,16 +45,14 @@ demander_chiffre(Plateau,J1,J2,JA) :-
     nl,
     write('Veuillez entrer un chiffre entre 1 et 7 : '),  
     read(Input),                                       
-    (   integer(Input),                                
-        Input >= 1,
-        Input =< 7
-    ->  verifierTaille(Plateau,J1, J2, JA, Input)                                 
+    (   integer(Input),Input >= 1,Input =< 7
+    ->  verifieretJouerCoupPossible(Plateau,J1, J2, JA, Input)                                 
     ;   write('Entrée invalide. '), nl,
         demander_chiffre(Plateau,J1,J2,JA)                    
     ) .
 
 %Mode de choix du robot
-coupRobot(Plateau,J1,J2,JA):- robotChoixCoup2(Plateau, J1, J2, JA, CoupRobot),verifierTaille(Plateau,J1, J2, JA, CoupRobot).
+coupRobot(Plateau,J1,J2,JA):- robotChoixCoup2(Plateau, J1, J2, JA, CoupRobot),verifieretJouerCoupPossible(Plateau,J1, J2, JA, CoupRobot).
 robotChoixCoup2(Plateau, J1, J2, JA, CoupRobot) :-
     NumColonneDebut is 1,
     (   regardeDeuxDerniersIdentiques(Plateau, NumColonneDebut, CoupRobot)
@@ -71,8 +70,8 @@ deuxDerniersIdentiques(Colonne) :-reverse(Colonne, [Dernier, AvantDernier | _]),
 
 
 %AJOUT D'UN PION : on vérifie qu'on peut le mettre dans la grille, si oui on valide le choix du joueur ou robot et on place le pion
-% Vérifie qu'on peut ajouter un pion
-verifierTaille(Plateau,J1,J2,JA, NumColonne) :- recupererColonne(Plateau, NumColonne, ColonneVoulue), length(ColonneVoulue, Taille), Taille >= 6, write('Cette colonne est pleine.'), tourDeJeu(Plateau,J1,J2,JA); 
+% Vérifie qu'on peut ajouter un pion, si oui, on l'ajoute
+verifieretJouerCoupPossible(Plateau,J1,J2,JA, NumColonne) :- recupererColonne(Plateau, NumColonne, ColonneVoulue), length(ColonneVoulue, Taille), Taille >= 6, write('Cette colonne est pleine.'), tourDeJeu(Plateau,J1,J2,JA); 
 
 % Ajoute un pion si on le peut en récupérant la colonne voulue
 recupererColonne(Plateau, NumColonne, ColonneVoulue), length(ColonneVoulue, Taille), Taille < 6,coup(Plateau,J1, J2, JA, NumColonne).
@@ -88,9 +87,9 @@ ajouterPion([Colonne|Reste], Chiffre, Pion, [Colonne|NouveauReste]) :- Chiffre >
 ajouterColonnePionFin([], Pion, [Pion]). 
 ajouterColonnePionFin([T|Q], Pion, [T|R]) :- ajouterColonnePionFin(Q, Pion, R).
 
+
 %% GESTION D'UN COUP DE JEU
 coup(Plateau, J1, J2, JA, Chiffre) :- choisirPion(J1, J2, JA, Pion), changerJoueur(J1, J2, JA, JS), ajouterPion(Plateau, Chiffre, Pion, NouveauPlateau), verificationfinduJeu(NouveauPlateau, Chiffre, J1, J2, JA, JS).   
-
 
 %Choisir un pion et changement de joueur
 choisirPion(J1,J2,JA, Pion) :- dif(J1,JA), Pion = "X" ; dif(J2,JA), Pion = "O" .
